@@ -21,7 +21,7 @@ namespace SistopeLab2
 
         public override bool posible(int x, int y)
         {
-            string posTab = Program.b.board[x, y].ToString();
+            string posTab = Board.board[x, y].ToString();
             if (posTab.Equals("0") || posTab.Equals("G")) { return true; }
             return false;
         }
@@ -30,15 +30,42 @@ namespace SistopeLab2
             return "P";
         }
 
+        public int[] correr(int[] posicion)
+        {
+            int[] pos = new int[2];
+            pos[0] = this.x;
+            pos[1] = this.y;
+            if (this.x - posicion[0] < 0) 
+            {
+                if (!bordeSup(this.x)) { pos[0] = this.x - 1; }
+            }
+            else 
+            {
+                if (!bordeInf(this.x)) { pos[0] = this.x + 1; }
+            }
+            if(this.x - posicion[1] < 0)
+            {
+                if (!bordeIzq(this.y)) { pos[1] = this.y - 1; }
+            }
+            else
+            {
+                if (!bordeDer(this.y)) { pos[1] = this.y + 1; }
+            }
+            return pos;
+            
+        }
+
         public void move()
         {
             Random r = new Random();
-            while (true)
+            while (!_shouldStop)
             {
+                if (this.contadorTiempoVirus >= 3) { while (true); }
                 int i = 0;
                 List<int[]> ValidPos2 = getPosiciones(this.x, this.y);   //crea una lista de todas las posiciones al rededor de donde esta.
                 List<int[]> ValidPos = new List<int[]>();
 
+                Program.mutex.WaitOne();
                 //Deja solo las posiciones validas
                 foreach (int[] posi in ValidPos2)
                 {
@@ -49,19 +76,73 @@ namespace SistopeLab2
                 if(ValidPos.Count() > 0)
                 {
                     int[] pos = ValidPos[r.Next(0, ValidPos.Count())];
-                    if (Program.b.board[pos[0], pos[1]].ToString().Equals("G"))
+                    Console.WriteLine("Persona (" + pos[0].ToString() + "," + pos[1].ToString() + ").");
+                    if (Board.board[pos[0], pos[1]].ToString().Equals("G"))
                     {   //Si el cuadro es una arma
-                        this.gun = (Weapon)Program.b.board[pos[0], pos[1]]; //La toma
+                        this.gun = (Weapon)Board.board[pos[0], pos[1]]; //La toma
                     }
-                    Program.b.board[pos[0], pos[1]] = this; //El espacio donde se movera la persona, es ahora la persona
-                    Program.b.board[this.x, this.y] = new Piso();   //El espacio donde estaba ahora es un piso (vacio)
+                    Board.board[pos[0], pos[1]] = this; //El espacio donde se movera la persona, es ahora la persona
+                    Board.board[this.x, this.y] = new Piso();   //El espacio donde estaba ahora es un piso (vacio)
                     this.x = pos[0]; //cambia la posicion en x
                     this.y = pos[1]; //cambia la posicion en y
                 }
 
+                //Una vez que se mueve, se debe comprobar si en sus posiciones adyacentes hay un zombie
+                List<int[]> adyacentes = getPosiciones(this.x, this.y);
+                foreach(int[] posi in adyacentes)
+                {
+                    Object ob = Board.board[posi[0], posi[1]];
+                    if(ob.ToString().Equals("Z"))
+                    {   //Si el objeto es un zombie:
+                        int caso = encuentro(this);
+                        caso = 1;
+                        if (caso == 0) { this.infectado = true; Console.WriteLine("INFECTADOOOOOO"); }
+                        else if (caso == 1) 
+                        {
+                            Program.mutZombie.WaitOne();
+                            int[] posicion_zombie = new int[2];
+                            posicion_zombie[0] = posi[0];
+                            posicion_zombie[1] = posi[1];
+                            Program.zombiesToKill.Add(posicion_zombie);
+                            Board.board[posi[0], posi[1]] = new Piso();
+                            Program.mutZombie.ReleaseMutex();
+                        }
+                        else if (caso == 2) 
+                        {
+                            Console.WriteLine("RUN BITCH RUN!!");
+                            int[] toRun = correr(posi);
+                            Board.board[toRun[0], toRun[1]] = this;
+                            Board.board[this.x, this.y] = new Piso();
+                            this.x = toRun[0];
+                            this.y = toRun[1];
+                        }
+                    }
+                }
+                Program.mutex.ReleaseMutex();
                 //Ahora que ya hizo su jugada, debe ponerse en la barrera.
-                Program.barr.SignalAndWait();
+                if (this.infectado) 
+                { 
+                    this.contadorTiempoVirus++;
+                    if (this.contadorTiempoVirus == 3) 
+                    {
+                        Program.mutex.WaitOne();
+                        Board.createZombie(this.x, this.y);
+                        Program.mutex.ReleaseMutex();
+                        _shouldStop = true;
+                    }
+                    else
+                    {
+                        Program.barr.SignalAndWait();
+                    }
+                }
+                
+                else
+                {
+                    Program.barr.SignalAndWait();
+                }
             }
+            //El virus T lo convirtió en zombie, se muere el humano y se desinscribe de la barrera
+            Program.barr.RemoveParticipant();
         }
     }
 }

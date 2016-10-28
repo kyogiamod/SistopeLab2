@@ -10,7 +10,8 @@ namespace SistopeLab2
     {
         public int x;
         public int y;
-        public object o = new Object();
+        public object oLock = new Object();
+        public volatile bool _shouldStop = false;
 
         public bool bordeSup(int x)
         {
@@ -34,8 +35,27 @@ namespace SistopeLab2
         }
         public virtual bool posible(int x, int y)
         {
-            if (Program.b.board[x, y].ToString().Equals("0")) { return true; }
+            if (Board.board[x, y].ToString().Equals("0")) { return true; }
             return false;
+        }
+
+        public int lanzarDado(int inicial, int final)
+        {
+            Random r = new Random();
+            return r.Next(inicial, final);
+        }
+
+        public int encuentro(Persona p)
+        {   //0 si humano pierde. 1 si humano mata al zombie o 2 si humano corre
+            if (lanzarDado(1, 11) >= 4) { return 0; }
+            else
+            {
+                if(p.gun != null)
+                {
+                    if (p.gun.bullets > 0) { return 1; }
+                }
+                return 2;
+            }
         }
         public List<int[]> getPosiciones(int x, int y)
         {

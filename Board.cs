@@ -16,7 +16,7 @@ namespace SistopeLab2
         public int totalZombies;
         public int personas;
         public int entradas;
-        public object[,] board;
+        public static object[,] board;
 
         public Board()
         {
@@ -28,7 +28,7 @@ namespace SistopeLab2
 
             this.ancho = Int16.Parse(datos[0]);
             this.alto = Int16.Parse(datos[1]);
-            this.board = new object[this.alto, this.ancho];
+            board = new object[this.alto, this.ancho];
             int ammo = Int16.Parse(datos[4]);
 
             List<string> lines = new List<string>();
@@ -49,29 +49,31 @@ namespace SistopeLab2
                 j = 0;
                 foreach(char c in s)
                 {
-                    if (c == 'X') { this.board[i, j] = new Wall(); }
-                    else if (c == 'E') { this.board[i, j] = new Entrada(); }
-                    else if (c == '0') { this.board[i, j] = new Piso(); }
+                    if (c == 'X') { board[i, j] = new Wall(); }
+                    else if (c == 'E') { board[i, j] = new Entrada(); }
+                    else if (c == '0') { board[i, j] = new Piso(); }
                     else if(c == 'Z')
                     {
                         Zombie zomb = new Zombie(i, j);
-                        this.board[i, j] = zomb;
+                        board[i, j] = zomb;
                         Thread oZombie = new Thread(new ThreadStart(zomb.move));
                         Threads.Add(oZombie);
+                        Program.barr.AddParticipant();
                     }
-                    else if (c == 'G') { this.board[i, j] = new Weapon(); }
+                    else if (c == 'G') { board[i, j] = new Weapon(); }
                     else if(c == 'P')
                     {
                         Persona p = new Persona(i, j);
-                        this.board[i, j] = p;
+                        board[i, j] = p;
                         Thread op = new Thread(new ThreadStart(p.move));
                         Threads.Add(op);
+                        Program.barr.AddParticipant();
                     }
                     j++;
                 }
                 i++;
             }
-            this.showBoard();
+            showBoard();
             foreach(Thread t in Threads)
             {
                 t.Start();
@@ -79,19 +81,49 @@ namespace SistopeLab2
 
         }
 
+        public static void createZombie(int x, int y)
+        {
+            Zombie oz = new Zombie(x, y);
+            board[x, y] = oz;
+            Thread oZombie = new Thread(new ThreadStart(oz.move));
+            oZombie.Start();
+            Program.barr.AddParticipant();
+        }
+        
         public void showBoard()
         {
+            string letra;
             int i = 0, j = 0;
             while (i < this.alto)
             {
                 j = 0;
                 while (j < this.ancho)
                 {
-                    object o = this.board[i, j];
+                    object o = board[i, j];
                     string toPrint = o.ToString();
                     if(toPrint != "0")
                     {
-                        Console.Write(this.board[i, j].ToString());
+                        //Console.Write(board[i, j].ToString());
+                        letra = board[i, j].ToString();
+
+                        if(letra.Equals("P"))
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.Write(letra);
+
+                            Console.ResetColor();
+                        }
+                        else if (letra.Equals("Z"))
+                        {
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.Write(letra);
+
+                            Console.ResetColor();
+                        }
+                        else
+                        {
+                            Console.Write(letra);
+                        }
                     }
                     else { Console.Write(" "); }
                     j++;

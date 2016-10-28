@@ -10,25 +10,24 @@ namespace SistopeLab2
 {
     class Program
     {
-        public static Barrier barr = new Barrier(23, (bar) =>
+        public static Barrier barr = new Barrier(1, (bar) =>
                  {
-                     //Thread.Sleep(1000);
-                     if (barr.CurrentPhaseNumber > faseAnterior)
-                     {
-                         Console.Clear();
-                         b.showBoard();
-                         faseAnterior++;
-                         pasar = true;
-                     }
+                     Console.Clear();
+                     b.showBoard();
                  });
-        public static Board b = new Board();
 
-        public static int faseAnterior = 0;
-        public static bool pasar = false;
+        public static Board b = new Board();
+        public static Mutex mutex = new Mutex();
+
+        public static List<int[]> zombiesToKill = new List<int[]>();
+        public static Mutex mutZombie = new Mutex();
+
     static void Main(string[] args)
         {
-            while (true)
+            while(true)
             {
+                barr.SignalAndWait();
+                Thread.Sleep(1000);
             }
         }
     }
