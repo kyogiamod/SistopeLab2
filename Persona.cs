@@ -27,15 +27,14 @@ namespace SistopeLab2
         }
         public override string ToString()
         {
+            if (infectado) { return "p"; }
             return "P";
         }
 
         public int[] correr(int[] posicion)
         {
             int[] pos = new int[2];
-            pos[0] = this.x;
-            pos[1] = this.y;
-            if (this.x - posicion[0] < 0) 
+            if (this.x - posicion[0] == -1) 
             {
                 if (!bordeSup(this.x)) { pos[0] = this.x - 1; }
             }
@@ -43,7 +42,7 @@ namespace SistopeLab2
             {
                 if (!bordeInf(this.x)) { pos[0] = this.x + 1; }
             }
-            if(this.x - posicion[1] < 0)
+            if(this.x - posicion[1] == -1)
             {
                 if (!bordeIzq(this.y)) { pos[1] = this.y - 1; }
             }
@@ -51,8 +50,10 @@ namespace SistopeLab2
             {
                 if (!bordeDer(this.y)) { pos[1] = this.y + 1; }
             }
+            if (Board.board[pos[0], pos[1]].ToString().Equals("0") || Board.board[pos[0], pos[1]].ToString().Equals("G")) { return pos; }
+            pos[0] = this.x;
+            pos[1] = this.y;
             return pos;
-            
         }
 
         public void move()
@@ -76,7 +77,7 @@ namespace SistopeLab2
                 if(ValidPos.Count() > 0)
                 {
                     int[] pos = ValidPos[r.Next(0, ValidPos.Count())];
-                    Console.WriteLine("Persona (" + pos[0].ToString() + "," + pos[1].ToString() + ").");
+                    //Console.WriteLine("Persona: ({0},{1})", pos[0], pos[1]);
                     if (Board.board[pos[0], pos[1]].ToString().Equals("G"))
                     {   //Si el cuadro es una arma
                         this.gun = (Weapon)Board.board[pos[0], pos[1]]; //La toma
@@ -95,27 +96,30 @@ namespace SistopeLab2
                     if(ob.ToString().Equals("Z"))
                     {   //Si el objeto es un zombie:
                         int caso = encuentro(this);
-                        caso = 1;
-                        if (caso == 0) { this.infectado = true; Console.WriteLine("INFECTADOOOOOO"); }
+                        if (caso == 0) { this.infectado = true; }   //Zombie muerde humano
                         else if (caso == 1) 
-                        {
+                        {   //Humano mata a zombie
                             Program.mutZombie.WaitOne();
                             int[] posicion_zombie = new int[2];
                             posicion_zombie[0] = posi[0];
                             posicion_zombie[1] = posi[1];
                             Program.zombiesToKill.Add(posicion_zombie);
-                            Board.board[posi[0], posi[1]] = new Piso();
+                            
                             Program.mutZombie.ReleaseMutex();
+                            //this.gun.bullets--;
                         }
                         else if (caso == 2) 
-                        {
-                            Console.WriteLine("RUN BITCH RUN!!");
+                        {   //Humano corre
                             int[] toRun = correr(posi);
-                            Board.board[toRun[0], toRun[1]] = this;
-                            Board.board[this.x, this.y] = new Piso();
+                            if(toRun[0] != this.x || toRun[1] != this.y)
+                            {
+                                Board.board[toRun[0], toRun[1]] = this;
+                                Board.board[this.x, this.y] = new Piso();
+                            }
                             this.x = toRun[0];
                             this.y = toRun[1];
                         }
+
                     }
                 }
                 Program.mutex.ReleaseMutex();
@@ -142,6 +146,7 @@ namespace SistopeLab2
                 }
             }
             //El virus T lo convirtió en zombie, se muere el humano y se desinscribe de la barrera
+            Board.personas--;
             Program.barr.RemoveParticipant();
         }
     }

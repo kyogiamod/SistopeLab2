@@ -8,30 +8,45 @@ namespace SistopeLab2
 {
     class Zombie : Entidad
     {
-
         public Zombie(int x, int y)
         {
             this.x = x;
             this.y = y;
         }
+        public Zombie(int x, int y, int mov)
+        {
+            this.x = x;
+            this.y = y;
+            numMov = mov;
+        }
+
+        private int numMov = 0;
         public void move()
         {
             Random r = new Random();
-            //Program.mutex.WaitOne();
             while (!_shouldStop)
             {
                 Program.mutZombie.WaitOne();
-                int i = 0;
-                if(Program.zombiesToKill.Count > 0)
+                int i;
+                int total = Program.zombiesToKill.Count;
+                for (i = 0; i < total; i++ )
                 {
-                    foreach (int[] pos in Program.zombiesToKill)
+                    try
                     {
+                        int[] pos = Program.zombiesToKill[i];
                         if (pos[0] == this.x && pos[1] == this.y)
                         {
                             _shouldStop = true;
                             Program.zombiesToKill.RemoveAt(i);
+                            Board.mutBoard.WaitOne();
+                            Board.zombiesNow--;
+                            Board.mutBoard.ReleaseMutex();
+                            Board.board[this.x, this.y] = new Piso();
                         }
-                        i++;
+                    }
+                    catch(ArgumentOutOfRangeException a)
+                    {
+                        break;
                     }
                 }
                 Program.mutZombie.ReleaseMutex();
@@ -50,9 +65,11 @@ namespace SistopeLab2
                 if (ValidPos.Count() > 0)
                 {
                     int[] pos = ValidPos[r.Next(0, ValidPos.Count())];
-                    Console.WriteLine("Zombie (" + pos[0].ToString() + "," + pos[1].ToString() + ").");
+                    //Console.WriteLine("Zombie va por ({0},{1}).", pos[0], pos[1]);
                     Board.board[pos[0], pos[1]] = this; //El espacio donde se movera la persona, es ahora la persona
-                    Board.board[this.x, this.y] = new Piso();   //El espacio donde estaba ahora es un piso (vacio)
+                    if (this.numMov > 0) { Board.board[this.x, this.y] = new Piso(); }  //El espacio donde estaba ahora es un piso (vacio)}
+                    //else { Board.board[this.x, this.y] = new Entrada(this.x, this.y); }
+                    numMov++;
                     this.x = pos[0]; //cambia la posicion en x
                     this.y = pos[1]; //cambia la posicion en y
                 }

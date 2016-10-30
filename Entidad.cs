@@ -47,6 +47,7 @@ namespace SistopeLab2
 
         public int encuentro(Persona p)
         {   //0 si humano pierde. 1 si humano mata al zombie o 2 si humano corre
+            return 1;
             if (lanzarDado(1, 11) >= 4) { return 0; }
             else
             {
@@ -84,9 +85,9 @@ namespace SistopeLab2
                 int equis = pos[i][0];
                 int ye = pos[i][1];
 
-                if (equis < 0) { pos.RemoveAt(i); }
+                if (equis < 0) { pos.RemoveAt(i); i--; }
                 else if (equis >= Program.b.alto) { pos.RemoveAt(i); i--; }
-                else if (ye < 0) { pos.RemoveAt(i); i--; }
+                if (ye < 0) { pos.RemoveAt(i); i--; }
                 else if (ye >= Program.b.ancho) { pos.RemoveAt(i); i--; }
             }
             return pos;

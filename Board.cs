@@ -12,11 +12,13 @@ namespace SistopeLab2
     {
         public int ancho;
         public int alto;
-        public int zombiesNow;
-        public int totalZombies;
-        public int personas;
-        public int entradas;
+        public static int zombiesNow = 0;
+        public static int totalZombies;
+        public static int personas = 0;
+        public static int zombiesFaltantes;
         public static object[,] board;
+        public static List<int[]> listaEntrada = new List<int[]>();
+        public static Mutex mutBoard = new Mutex();
 
         public Board()
         {
@@ -30,6 +32,9 @@ namespace SistopeLab2
             this.alto = Int16.Parse(datos[1]);
             board = new object[this.alto, this.ancho];
             int ammo = Int16.Parse(datos[4]);
+            Board.totalZombies = Int16.Parse(datos[2]);
+            zombiesFaltantes = totalZombies;
+
 
             List<string> lines = new List<string>();
 
@@ -50,23 +55,25 @@ namespace SistopeLab2
                 foreach(char c in s)
                 {
                     if (c == 'X') { board[i, j] = new Wall(); }
-                    else if (c == 'E') { board[i, j] = new Entrada(); }
-                    else if (c == '0') { board[i, j] = new Piso(); }
-                    else if(c == 'Z')
+                    else if (c == 'E') 
                     {
-                        Zombie zomb = new Zombie(i, j);
-                        board[i, j] = zomb;
-                        Thread oZombie = new Thread(new ThreadStart(zomb.move));
-                        Threads.Add(oZombie);
-                        Program.barr.AddParticipant();
+                        Entrada en = new Entrada(i, j);
+                        board[i, j] = en;
+                        int[] p = new int[2];
+                        p[0] = i;
+                        p[1] = j;
+                        listaEntrada.Add(p);
                     }
-                    else if (c == 'G') { board[i, j] = new Weapon(); }
+                    else if (c == '0') { board[i, j] = new Piso(); }
+                    //else if (c == 'Z') { Program.barr.AddParticipant(); }
+                    else if (c == 'G') { board[i, j] = new Weapon(ammo); }
                     else if(c == 'P')
                     {
                         Persona p = new Persona(i, j);
                         board[i, j] = p;
                         Thread op = new Thread(new ThreadStart(p.move));
                         Threads.Add(op);
+                        Board.personas++;
                         Program.barr.AddParticipant();
                     }
                     j++;
@@ -78,16 +85,42 @@ namespace SistopeLab2
             {
                 t.Start();
             }
+        }
 
+        public void meterZombies()
+        {
+            while (Board.zombiesFaltantes > 0)
+            {
+                foreach (int[] pos in listaEntrada)
+                {
+                    if (Board.zombiesFaltantes > 0)
+                    {
+
+                        Zombie z = new Zombie(pos[0], pos[1]);
+                        Thread oZombie = new Thread(new ThreadStart(z.move));
+                        Program.barr.AddParticipant();
+                        oZombie.Start();
+                        mutBoard.WaitOne();
+                        Board.zombiesNow++;
+                        Board.zombiesFaltantes--;
+                        mutBoard.ReleaseMutex();
+                    }
+                }
+                Thread.Sleep(3000);
+            }
         }
 
         public static void createZombie(int x, int y)
         {
-            Zombie oz = new Zombie(x, y);
+            Zombie oz = new Zombie(x, y, 1);
             board[x, y] = oz;
+            
             Thread oZombie = new Thread(new ThreadStart(oz.move));
             oZombie.Start();
             Program.barr.AddParticipant();
+            mutBoard.WaitOne();
+            Board.zombiesNow++;
+            mutBoard.ReleaseMutex();
         }
         
         public void showBoard()
@@ -101,14 +134,13 @@ namespace SistopeLab2
                 {
                     object o = board[i, j];
                     string toPrint = o.ToString();
-                    if(toPrint != "0")
+                    if(!toPrint.Equals("0"))
                     {
-                        //Console.Write(board[i, j].ToString());
                         letra = board[i, j].ToString();
-
-                        if(letra.Equals("P"))
+                        if(letra.Equals("P") || letra.Equals("p"))
                         {
-                            Console.ForegroundColor = ConsoleColor.Red;
+                            if(letra.Equals("P"))   { Console.ForegroundColor = ConsoleColor.Red; }
+                            else {Console.ForegroundColor = ConsoleColor.Magenta;}
                             Console.Write(letra);
 
                             Console.ResetColor();
@@ -131,6 +163,9 @@ namespace SistopeLab2
                 Console.WriteLine();
                 i++;
             }
+            Console.WriteLine("Numero de zombies: {0}", Board.zombiesNow);
+            Console.WriteLine("Numero de personas: {0}", Board.personas);
+            Console.WriteLine("Tiempo transcurrido: {0}[segundos]", Program.time);
         }
     }
 }
