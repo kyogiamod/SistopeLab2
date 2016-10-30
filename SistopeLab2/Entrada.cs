@@ -22,18 +22,5 @@ namespace SistopeLab2
             if (zomb != null) { return "Z"; }
             return "E";
         }
-
-        public void comprobarEntrada()
-        {
-            while(zomb != null)
-            {
-                if (this.x != zomb.x || this.y != zomb.y) { zomb = null; }
-            }
-        }
-        public bool entrando()
-        {
-            if (zomb == null) { return false; }
-            return true;
-        }
     }
 }

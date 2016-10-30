@@ -63,7 +63,7 @@ namespace SistopeLab2
         {
             while (Board.personas > 0 && (Board.zombiesNow > 0 || Board.zombiesFaltantes > 0))
             {
-                Thread.Sleep(500);
+                Thread.Sleep(1000);
                 time++;
                 barr.SignalAndWait();
             }

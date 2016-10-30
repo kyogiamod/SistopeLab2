@@ -47,7 +47,6 @@ namespace SistopeLab2
 
         public int encuentro(Persona p)
         {   //0 si humano pierde. 1 si humano mata al zombie o 2 si humano corre
-            return 1;
             if (lanzarDado(1, 11) >= 4) { return 0; }
             else
             {

@@ -142,7 +142,6 @@ namespace SistopeLab2
                             if(letra.Equals("P"))   { Console.ForegroundColor = ConsoleColor.Red; }
                             else {Console.ForegroundColor = ConsoleColor.Magenta;}
                             Console.Write(letra);
-
                             Console.ResetColor();
                         }
                         else if (letra.Equals("Z"))
@@ -150,6 +149,12 @@ namespace SistopeLab2
                             Console.ForegroundColor = ConsoleColor.Green;
                             Console.Write(letra);
 
+                            Console.ResetColor();
+                        }
+                        else if (letra.Equals("G"))
+                        {
+                            Console.ForegroundColor = ConsoleColor.Cyan;
+                            Console.Write(letra);
                             Console.ResetColor();
                         }
                         else
